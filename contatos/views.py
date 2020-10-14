@@ -1,10 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404
 from .models import Contato
 from django.core.paginator import Paginator
 # o Q é para fazer consultas com query mais elaboradas
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
+from django.contrib import messages
 
 
 def index(request):
@@ -57,8 +58,10 @@ def busca(request):
     #     mostrar=True
     # )
 
-    if termo is None:
-        raise Http404()
+    if termo is None or not termo:
+        # raise Http404()
+        messages.add_message(request, messages.ERROR, 'Campo não pode ficar vazio' )
+        return redirect('index')
     campos = Concat('nome', Value(' '), 'sobrenome')
 
     contatos = Contato.objects.annotate(
@@ -66,7 +69,7 @@ def busca(request):
     ).filter(
         Q(nome_completo__icontains=termo) | Q(telefone__icontains=termo)
     )
-    print(contatos.query)
+    # print(contatos.query)
 
     paginator = Paginator(contatos, 5)
     page = request.GET.get('page')
