@@ -3,8 +3,7 @@ from django.contrib import messages, auth
 from django.core.validators import validate_email
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-
-# Create your views here.
+from .models import FormContato
 
 
 def login(request):
@@ -23,8 +22,6 @@ def login(request):
         auth.login(request, user)
         messages.success(request, 'Bem vindo.')
         return redirect('dashboard')
-
-
 
 
 def logout(request):
@@ -76,11 +73,24 @@ def register(request):
 
     messages.success(request, 'Contato Salvo. Faça login com o contato salvo.')
     user = User.objects.create_user(username=usuario, email=email,
-                                    password=senha,first_name= nome,
-                                    last_name= sobrenome)
+                                    password=senha, first_name=nome,
+                                    last_name=sobrenome)
     user.save()
     return redirect('login')
 
+
 @login_required(redirect_field_name='login')
 def dashboard(request):
-    return render(request, 'accounts/dashboard.html')
+    if request.method != 'POST':
+        form = FormContato()
+        return render(request, 'accounts/dashboard.html', {'form': form})
+
+    form = FormContato(request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, "Erro ao enviar formulário.")
+        form = FormContato()
+        return render(request, 'accounts/dashboard.html', {'form': form})
+
+    form.save()
+    messages.success(request, f'Contato {request.POST.get("nome")} Salvo com Sucesso.')
+    return redirect('dashboard')
